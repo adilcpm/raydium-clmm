@@ -5,6 +5,9 @@ use crate::pool::{RewardInfo, REWARD_NUM};
 use crate::util::*;
 use crate::Result;
 use anchor_lang::{prelude::*, system_program};
+use serde::Serialize;
+use serde_big_array::BigArray;
+
 #[cfg(feature = "enable-log")]
 use std::convert::identity;
 
@@ -15,14 +18,17 @@ pub const TICK_ARRAY_SIZE: i32 = 60;
 // pub const MAX_TICK_ARRAY_START_INDEX: i32 = 306600;
 #[account(zero_copy(unsafe))]
 #[repr(C, packed)]
+#[derive(Debug, Serialize)]
 pub struct TickArrayState {
     pub pool_id: Pubkey,
     pub start_tick_index: i32,
+    #[serde(with = "BigArray")]
     pub ticks: [TickState; TICK_ARRAY_SIZE_USIZE],
     pub initialized_tick_count: u8,
     // account update recent epoch
     pub recent_epoch: u64,
     // Unused bytes for future upgrades.
+    #[serde(skip_serializing)]
     pub padding: [u8; 107],
 }
 
@@ -266,7 +272,7 @@ impl Default for TickArrayState {
 
 #[zero_copy(unsafe)]
 #[repr(C, packed)]
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Serialize)]
 pub struct TickState {
     pub tick: i32,
     /// Amount of net liquidity added (subtracted) when tick is crossed from left to right (right to left)
@@ -282,6 +288,7 @@ pub struct TickState {
     // Reward growth per unit of liquidity like fee, array of Q64.64
     pub reward_growths_outside_x64: [u128; REWARD_NUM],
     // Unused bytes for future upgrades.
+    #[serde(skip_serializing)]
     pub padding: [u32; 13],
 }
 
@@ -1431,3 +1438,8 @@ pub mod tick_array_test {
         }
     }
 }
+
+// TODO
+// - fstab disks
+// - genesis fetch
+// - run validator
